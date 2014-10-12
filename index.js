@@ -22,21 +22,24 @@ function st(arg) {
     var stack = new Error().stack
 
     if (typeof arg === 'function') {
-        if (arg.length === 1) {
-            return function (cb) {
-                arg(function (err, data) {
-                    cb(attach(err, stack), data)
+        return function (x, y) {
+            // x === callback
+            if (arguments.length === 1) {
+                var callback = x
+                return arg(function (err, data) {
+                    callback(attach(err, stack), data)
                 })
             }
-        }
-        if (arg.length === 2) {
-            return function (resolve, reject) {
-                arg(resolve, function (error) {
-                    reject(attach(error, stack))
+            // x === resolve, y === reject
+            if (arguments.length === 2) {
+                var resolve = x
+                var reject = y
+                return arg(resolve, function (err) {
+                    reject(attach(err, stack))
                 })
             }
+            panic(new Error('Invalid number of argument'))
         }
-        throw new Error('Invalid arguments')
     }
     if (arg && typeof arg['catch'] === 'function') {
         return arg['catch'](function (error) {
@@ -60,4 +63,10 @@ st.cb = function (callback) {
         args[0] = attach(err, stack)
         callback.apply(this, args)
     }
+}
+
+function panic(err) {
+    setImmediate(function () {
+        throw err
+    })
 }

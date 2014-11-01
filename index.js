@@ -1,9 +1,7 @@
 
-// yield st((res, rej) => fs.exists('filename', res))
-// yield st(cb => client.inc('abc', cb))
-// yield st(new Promise())
-
 module.exports = st
+
+var thunk = require('gocsp-thunk')
 
 // some smart way to detect trace ?
 // e.g. use --st ?
@@ -16,37 +14,29 @@ function attach(err, stack) {
     return err
 }
 
-function st(arg) {
-    if (!st.trace) { return arg }
+// awaitable: promise, thunk, callbacks
+// yield st(thunkFunction)
+// yield st(new Promise())
+function st(awaitable) {
+    if (!st.trace) { return awaitable }
 
     var stack = new Error().stack
 
-    if (typeof arg === 'function') {
-        return function (x, y) {
-            // x === callback
-            if (arguments.length === 1) {
-                var callback = x
-                return arg(function (err, data) {
-                    callback(attach(err, stack), data)
-                })
-            }
-            // x === resolve, y === reject
-            if (arguments.length === 2) {
-                var resolve = x
-                var reject = y
-                return arg(resolve, function (err) {
-                    reject(attach(err, stack))
-                })
-            }
-            panic(new Error('Invalid number of argument'))
-        }
-    }
-    if (arg && typeof arg['catch'] === 'function') {
-        return arg['catch'](function (error) {
+    // promise
+    if (awaitable && typeof awaitable.catch === 'function') {
+        return awaitable.catch(function (error) {
             throw attach(error, stack)
         })
     }
-    throw new Error('invalid arguments')
+    // thunk or callback
+    if (typeof awaitable === 'function') {
+        return thunk(function (cb) {
+            awaitable(function (err, data) {
+                cb(attach(err, stack), data)
+            })
+        })
+    }
+    throw new Error(awaitable + ' must be promise or thunk')
 }
 
 // fs.readFile('/path/to/file', st.cb(function (err, data) {
@@ -63,10 +53,4 @@ st.cb = function (callback) {
         args[0] = attach(err, stack)
         callback.apply(this, args)
     }
-}
-
-function panic(err) {
-    setImmediate(function () {
-        throw err
-    })
 }

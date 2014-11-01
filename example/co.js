@@ -1,7 +1,9 @@
 
-var co = require('co')
-var fs = require('co-fs')
-var st = require('gocsp-st'), st.trace = true
+var fs = require('gocsp-fs')
+var co = require('gocsp-co')
+var st = require('gocsp-st')
+
+st.trace = true
 
 co(function* () {
     try {

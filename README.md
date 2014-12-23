@@ -1,7 +1,11 @@
 
 # gocsp-st
 
-stack trace for thunk, promise, callback, etc
+Stack trace for thunk, promise, callback, etc
+
+## Deprecated
+
+It's functionality is built-in for [gocsp/thunk](https://github.com/gyson/gocsp/doc/thunk.md).
 
 ### Usage
 
